@@ -5,7 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Handler[TSES interface{}](handler func(*gin.Context) (int, interface{}, error), privilege string) gin.HandlerFunc {
+func Handler[TSES interface{}](handler func(*gin.Context) (int, interface{}, error)) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		code, rsp, e := handler(c)
 		if e != nil {
@@ -18,7 +18,7 @@ func Handler[TSES interface{}](handler func(*gin.Context) (int, interface{}, err
 	}
 }
 
-func HandlerD[TSES interface{}, TDATA interface{}](handler func(*gin.Context, TDATA) (int, interface{}, error), privilege string) gin.HandlerFunc {
+func HandlerD[TSES interface{}, TDATA interface{}](handler func(*gin.Context, TDATA) (int, interface{}, error)) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var data TDATA
 		if e := c.ShouldBindJSON(&data); e != nil {
@@ -38,7 +38,7 @@ func HandlerD[TSES interface{}, TDATA interface{}](handler func(*gin.Context, TD
 	}
 }
 
-func HandlerQ[TSES interface{}](handler func(*gin.Context, map[string]string) (int, interface{}, error), privilege string) gin.HandlerFunc {
+func HandlerQ[TSES interface{}](handler func(*gin.Context, map[string]string) (int, interface{}, error)) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		queries, _, e := parseQuery(c)
@@ -58,7 +58,7 @@ func HandlerQ[TSES interface{}](handler func(*gin.Context, map[string]string) (i
 	}
 }
 
-func HandlerQD[TSES interface{}, TDATA interface{}](handler func(*gin.Context, map[string]string, TDATA) (int, interface{}, error), privilege string) gin.HandlerFunc {
+func HandlerQD[TSES interface{}, TDATA interface{}](handler func(*gin.Context, map[string]string, TDATA) (int, interface{}, error)) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		queries, _, e := parseQuery(c)
 		if e != nil {
