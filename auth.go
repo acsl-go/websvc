@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -31,29 +30,6 @@ type AuthenticatorConfigure struct {
 var (
 	ErrNoPrivilege = errors.New("fobidden")
 )
-
-func parseQuery(c *gin.Context) (map[string]string, string, error) {
-	queries := make(map[string]string)
-	if e := c.BindQuery(&queries); e != nil {
-		logger.Error("Auth: parse query failed", e)
-		return nil, "", e
-	}
-	query_str := ""
-
-	keys := make([]string, 0, len(queries))
-	for k := range queries {
-		keys = append(keys, k)
-	}
-	slices.Sort(keys)
-	for _, k := range keys {
-		query_str += k + "=" + queries[k] + "&"
-	}
-	if len(query_str) > 0 && query_str[len(query_str)-1] == '&' {
-		query_str = query_str[:len(query_str)-1]
-	}
-
-	return queries, query_str, nil
-}
 
 func doAuth(c *gin.Context, cfg *AuthenticatorConfigure, privilege string) (interface{}, map[string]string, []byte, int) {
 	auth_str := c.GetHeader("Authorization")
@@ -131,18 +107,6 @@ func doAuth(c *gin.Context, cfg *AuthenticatorConfigure, privilege string) (inte
 	}
 
 	return ses, queries, body_bytes, 0
-}
-
-func processResp(c *gin.Context, code int, rsp interface{}) {
-	if rsp == nil {
-		c.AbortWithStatus(code)
-	} else if r, ok := rsp.(Response); ok {
-		c.Data(code, r.ContentType, r.Body)
-	} else if str, ok := rsp.(string); ok {
-		c.String(code, str)
-	} else {
-		c.JSON(code, rsp)
-	}
 }
 
 func Auth[TSES interface{}](cfg *AuthenticatorConfigure, handler func(*gin.Context, TSES) (int, interface{}, error), privilege string) gin.HandlerFunc {
