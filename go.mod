@@ -4,7 +4,7 @@ go 1.21.4
 
 require (
 	github.com/acsl-go/logger v0.0.2
-	github.com/acsl-go/service v0.0.1
+	github.com/acsl-go/service v0.0.4
 	github.com/gin-gonic/gin v1.9.1
 )
 
