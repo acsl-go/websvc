@@ -1,6 +1,7 @@
 package websvc
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/acsl-go/logger"
@@ -25,8 +26,18 @@ func NewHandler(initializer func(*gin.Engine)) http.Handler {
 	return router
 }
 
-func Task(name, addr string, initializer func(*gin.Engine)) service.ServiceTask {
-	return service.HttpServer(name, addr, NewHandler(initializer))
+func Task(name string, config *Config, initializer func(*gin.Engine)) service.ServiceTask {
+	if config.SSLCert != "" && config.SSLKey != "" {
+		if config.Port == 0 {
+			config.Port = 443
+		}
+		return HttpsTask(name, fmt.Sprintf("%s:%d", config.Host, config.Port), config.SSLCert, config.SSLKey, initializer)
+	} else {
+		if config.Port == 0 {
+			config.Port = 80
+		}
+		return HttpTask(name, fmt.Sprintf("%s:%d", config.Host, config.Port), initializer)
+	}
 }
 
 func HttpTask(name, addr string, initializer func(*gin.Engine)) service.ServiceTask {
