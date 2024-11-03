@@ -6,3 +6,7 @@ type Config struct {
 	SSLCert string `mapstructure:"ssl_cert"` // [Optional] SSL Certificate file path
 	SSLKey  string `mapstructure:"ssl_key"`  // [Optional] SSL Key file path
 }
+
+func (c *Config) IsSSL() bool {
+	return c.SSLCert != "" && c.SSLKey != ""
+}
