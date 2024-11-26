@@ -82,6 +82,38 @@ func (sc *WebSocketConnection) Send(msg *misc.Buffer) {
 	sc._sendingQueue <- msg
 }
 
+func (sc *WebSocketConnection) SendBinaryBuffer(msg *misc.Buffer) {
+	msg.Tag = websocket.BinaryMessage
+	sc._sendingQueue <- msg
+}
+
+func (sc *WebSocketConnection) SendTextBuffer(msg *misc.Buffer) {
+	msg.Tag = websocket.TextMessage
+	sc._sendingQueue <- msg
+}
+
+func (sc *WebSocketConnection) SendBytes(data []byte) {
+	var buf *misc.Buffer
+	if sc._cfg.BufferPool != nil {
+		buf = sc._cfg.BufferPool.Get()
+	} else {
+		buf = misc.NewBuffer(uint(len(data)))
+	}
+	buf.Write(data)
+	sc.SendBinaryBuffer(buf)
+}
+
+func (sc *WebSocketConnection) SendText(msg string) {
+	var buf *misc.Buffer
+	if sc._cfg.BufferPool != nil {
+		buf = sc._cfg.BufferPool.Get()
+	} else {
+		buf = misc.NewBuffer(uint(len(msg)))
+	}
+	buf.Write([]byte(msg))
+	sc.SendTextBuffer(buf)
+}
+
 func (sc *WebSocketConnection) run(qs chan os.Signal) bool {
 	sc._lastBeat = time.Now().UnixMilli()
 	sc._conn.SetPingHandler(func(appData string) error {
@@ -179,24 +211,24 @@ func (sc *WebSocketConnection) recvLoop() {
 			break
 		}
 
-		if mt == websocket.BinaryMessage {
-			var msg *misc.Buffer
-			if sc._cfg.BufferPool != nil {
-				msg = sc._cfg.BufferPool.Get()
-			} else {
-				msg = misc.NewBuffer(sc._cfg.BufferSize)
-			}
-			n, _ := rd.Read(msg.Buffer())
-			if n <= 0 {
-				msg.Release()
-				break
-			}
-			msg.SetDataLen(n)
-			msg.Seek(0, 0)
-			if sc._cfg.OnMessage != nil {
-				sc._cfg.OnMessage(sc, msg.AddRef(), sc._cfg.Attachment)
-			}
-			msg.Release()
+		//if mt == websocket.BinaryMessage {
+		var msg *misc.Buffer
+		if sc._cfg.BufferPool != nil {
+			msg = sc._cfg.BufferPool.Get()
+		} else {
+			msg = misc.NewBuffer(sc._cfg.BufferSize)
 		}
+		n, _ := rd.Read(msg.Buffer())
+		if n <= 0 {
+			msg.Release()
+			break
+		}
+		msg.SetDataLen(n)
+		msg.Seek(0, 0)
+		if sc._cfg.OnMessage != nil {
+			sc._cfg.OnMessage(sc, mt, msg.AddRef(), sc._cfg.Attachment)
+		}
+		msg.Release()
+		//}
 	}
 }

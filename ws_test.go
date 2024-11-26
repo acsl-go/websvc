@@ -17,7 +17,7 @@ func TestWSServer(t *testing.T) {
 			OnDisconnected: func(conn *WebSocketConnection, attachment interface{}) {
 				println("Disconnected")
 			},
-			OnMessage: func(conn *WebSocketConnection, msg *misc.Buffer, attachment interface{}) {
+			OnMessage: func(conn *WebSocketConnection, mt int, msg *misc.Buffer, attachment interface{}) {
 				println("Message " + string(msg.Bytes()))
 			},
 			BeatInterval: 1000,
@@ -37,7 +37,7 @@ func TestWSClient(t *testing.T) {
 		OnDisconnected: func(conn *WebSocketConnection, attachment interface{}) {
 			println("Disconnected")
 		},
-		OnMessage: func(conn *WebSocketConnection, msg *misc.Buffer, attachment interface{}) {
+		OnMessage: func(conn *WebSocketConnection, mt int, msg *misc.Buffer, attachment interface{}) {
 			println("Message")
 		},
 		BeatInterval: 1000,

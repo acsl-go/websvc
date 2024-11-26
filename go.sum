@@ -1,7 +1,7 @@
-github.com/acsl-go/logger v0.0.2 h1:8UQRP/IXHW/3g7BJ26DWHGG30VLba8VAMKqw15jhdgE=
-github.com/acsl-go/logger v0.0.2/go.mod h1:8fG1fbSfYPL0rBw0MJG+7dhwvFjA74KK0BvJXQKxl40=
-github.com/acsl-go/misc v0.0.4 h1:KrYSPblBx1KIEY6Os5wNInCTgqIX1Se7lZm2Rua33XA=
-github.com/acsl-go/misc v0.0.4/go.mod h1:5wD/nLK4sKmwV+Eaw8kDJfKbe68Tx/Emx/sNs5BiGNo=
+github.com/acsl-go/logger v0.0.3 h1:0T/kFTczs2xc3YlbLXJC1NYo2Auwnlubb5fPz4JbKa0=
+github.com/acsl-go/logger v0.0.3/go.mod h1:8fG1fbSfYPL0rBw0MJG+7dhwvFjA74KK0BvJXQKxl40=
+github.com/acsl-go/misc v0.0.5 h1:2ClR587SdUL7Y+R5vFtFDWDQDW7+UNHJcr0dtEvxAdU=
+github.com/acsl-go/misc v0.0.5/go.mod h1:5wD/nLK4sKmwV+Eaw8kDJfKbe68Tx/Emx/sNs5BiGNo=
 github.com/acsl-go/service v0.0.4 h1:OWW9KgOIyDx9pt0HymK+xWn67J8RaqSIa7PcVa7HSJE=
 github.com/acsl-go/service v0.0.4/go.mod h1:51ivos6mBPA63lu+DiS1T1PaJhyynpOQqpiC4ddR9Oo=
 github.com/bytedance/sonic v1.5.0/go.mod h1:ED5hyg4y6t3/9Ku1R6dU/4KyJ48DZ4jPhfY1O2AihPM=

@@ -20,7 +20,7 @@ type WebSocketHandlerConfig struct {
 	// [Optional] Disconnected event processor
 	OnDisconnected func(conn *WebSocketConnection, attachment interface{})
 
-	OnMessage func(conn *WebSocketConnection, msg *misc.Buffer, attachment interface{})
+	OnMessage func(conn *WebSocketConnection, msgType int, msg *misc.Buffer, attachment interface{})
 
 	// [Optional] The connection pool for websocket connections
 	// A connection poll could be created by NewConnectionPool() function
