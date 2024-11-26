@@ -1,8 +1,10 @@
 package websvc
 
 import (
+	"os"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/acsl-go/logger"
 	"github.com/acsl-go/misc"
@@ -14,16 +16,24 @@ type WebSocketConnection struct {
 	_quitChan     chan int
 	_sendingQueue chan *misc.Buffer
 
-	_conn     *websocket.Conn
-	_pool     *sync.Pool
-	_cfg      *WebSocketHandlerConfig
-	_refCount int32
+	_conn            *websocket.Conn
+	_pool            *sync.Pool
+	_cfg             *WebSocketHandlerConfig
+	_lastBeat        int64
+	_refCount        int32
+	_heartBeatTimout int64
+	_triggerBeat     bool
 }
 
-func NewWebSocketConnection() *WebSocketConnection {
+func NewWebSocketConnection(cfg *WebSocketHandlerConfig) *WebSocketConnection {
 	return &WebSocketConnection{
-		_quitChan:     make(chan int),
+		_quitChan:     make(chan int, 5),
 		_sendingQueue: make(chan *misc.Buffer, 100),
+		_conn:         nil,
+		_pool:         nil,
+		_cfg:          cfg,
+		_refCount:     1,
+		_triggerBeat:  true,
 	}
 }
 
@@ -40,6 +50,27 @@ func (sc *WebSocketConnection) Release() {
 	}
 }
 
+func (sc *WebSocketConnection) Connect(url string, qs chan os.Signal) bool {
+	conn, _, e := websocket.DefaultDialer.Dial(url, nil)
+	if e != nil {
+		logger.Error("websvc:ws:dial %s failed: %s", url, e.Error())
+		if sc._cfg.OnDisconnected != nil {
+			sc._cfg.OnDisconnected(sc, sc._cfg.Attachment)
+		}
+		return false
+	} else {
+		sc._conn = conn
+		if sc._cfg.OnConnected != nil {
+			sc._cfg.OnConnected(sc, sc._cfg.Attachment)
+		}
+		ret := sc.run(qs)
+		if sc._cfg.OnDisconnected != nil {
+			sc._cfg.OnDisconnected(sc, sc._cfg.Attachment)
+		}
+		return ret
+	}
+}
+
 func (sc *WebSocketConnection) Close() {
 	if sc._conn != nil {
 		sc._conn.Close()
@@ -47,11 +78,38 @@ func (sc *WebSocketConnection) Close() {
 	}
 }
 
-func (sc *WebSocketConnection) run() {
-	sc._waitGroup.Add(1)
+func (sc *WebSocketConnection) Send(msg *misc.Buffer) {
+	sc._sendingQueue <- msg
+}
+
+func (sc *WebSocketConnection) run(qs chan os.Signal) bool {
+	sc._lastBeat = time.Now().UnixMilli()
+	sc._conn.SetPingHandler(func(appData string) error {
+		sc._lastBeat = time.Now().UnixMilli()
+		sc._conn.WriteMessage(websocket.PongMessage, nil)
+		println("Ping")
+		return nil
+	})
+	sc._conn.SetPongHandler(func(appData string) error {
+		sc._lastBeat = time.Now().UnixMilli()
+		println("Pong")
+		return nil
+	})
+	sc._waitGroup.Add(3)
 	go sc.sendLoop()
-	sc.recvLoop()
-	sc._quitChan <- 1
+	go sc.recvLoop()
+	go sc.beatLoop()
+	ret := false
+	if qs != nil {
+		select {
+		case s := <-sc._quitChan:
+			sc._quitChan <- s
+		case s := <-qs:
+			sc.Close()
+			qs <- s
+			ret = true
+		}
+	}
 	sc._waitGroup.Wait()
 	sc.Close()
 	for {
@@ -61,7 +119,35 @@ func (sc *WebSocketConnection) run() {
 		case <-sc._quitChan:
 			// DO NOTHING
 		default:
+			return ret
+		}
+	}
+}
+
+func (sc *WebSocketConnection) beatLoop() {
+	defer sc._waitGroup.Done()
+	beatInterval := time.Second * time.Duration(sc._cfg.BeatInterval)
+	if beatInterval == 0 {
+		beatInterval = time.Second * 10
+	}
+	sc._heartBeatTimout = int64(sc._cfg.BeatTimeout * 1000)
+	if sc._heartBeatTimout == 0 {
+		sc._heartBeatTimout = int64(sc._cfg.BeatInterval * 3000)
+	}
+	tick := time.NewTicker(beatInterval)
+	for {
+		select {
+		case s := <-sc._quitChan:
+			sc._quitChan <- s
 			return
+		case <-tick.C:
+			ts := time.Now().UnixMilli()
+			if ts-sc._lastBeat > sc._heartBeatTimout {
+				sc.Close()
+				return
+			} else if sc._triggerBeat {
+				println(sc._conn.WriteMessage(websocket.PingMessage, nil))
+			}
 		}
 	}
 }
@@ -70,7 +156,8 @@ func (sc *WebSocketConnection) sendLoop() {
 	defer sc._waitGroup.Done()
 	for {
 		select {
-		case <-sc._quitChan:
+		case s := <-sc._quitChan:
+			sc._quitChan <- s
 			return
 		case buf := <-sc._sendingQueue:
 			err := sc._conn.WriteMessage(websocket.BinaryMessage, buf.Bytes())
@@ -88,12 +175,11 @@ func (sc *WebSocketConnection) recvLoop() {
 		mt, rd, err := sc._conn.NextReader()
 		if err != nil {
 			logger.Debug("read: %v", err)
+			sc._quitChan <- 1
 			break
 		}
 
-		if mt == websocket.PingMessage {
-			sc._conn.WriteMessage(websocket.PongMessage, nil)
-		} else if mt == websocket.BinaryMessage {
+		if mt == websocket.BinaryMessage {
 			var msg *misc.Buffer
 			if sc._cfg.BufferPool != nil {
 				msg = sc._cfg.BufferPool.Get()

@@ -38,6 +38,15 @@ type WebSocketHandlerConfig struct {
 	// If BufferPool is nil, this value must be specified and will be used to create a buffer pool
 	BufferSize uint
 
+	// [Optional] The heartbeat interval in seconds
+	// If set to 0, the default value 10s will be used
+	// Heartbeat will be triggered by the client side
+	BeatInterval int
+
+	// [Optional] The heartbeat timeout in seconds
+	// If set to 0, the heartbeat timeout will be set to BeatInterval * 3
+	BeatTimeout int
+
 	// User-defined attachment
 	// The attachment will be passed to all handle functions in this config
 	Attachment interface{}
