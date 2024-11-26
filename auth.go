@@ -24,6 +24,7 @@ type AuthenticatorConfigure struct {
 	QueryToken     func(context.Context, string) (interface{}, string, error)
 	CheckPrivilege func(context.Context, string, interface{}, string) error
 	RefreshToken   func(context.Context, string, interface{}) error
+	SuperPrivilege string
 	TsTolerance    int64
 }
 
@@ -31,6 +32,10 @@ var (
 	ErrNoPrivilege = errors.New("fobidden")
 )
 
+// Do authentication
+// The signature will be calculated with:
+//
+//	sha256(ses_id + ":" + token + ":" + timestamp + ":" + query + ":" + body_hash)
 func doAuth(c *gin.Context, cfg *AuthenticatorConfigure, privilege string) (interface{}, map[string]string, []byte, int) {
 	auth_str := c.GetHeader("Authorization")
 	if auth_str == "" {

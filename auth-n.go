@@ -12,6 +12,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Do authentication without body data
+// The signature will be calculated with:
+//
+//	sha256(ses_id + ":" + token + ":" + timestamp + ":" + query)
 func doAuthN(c *gin.Context, cfg *AuthenticatorConfigure, privilege string) (interface{}, map[string]string, int) {
 	auth_str := c.GetHeader("Authorization")
 	if auth_str == "" {
