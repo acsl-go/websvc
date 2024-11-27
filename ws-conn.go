@@ -1,6 +1,7 @@
 package websvc
 
 import (
+	"net/http"
 	"os"
 	"sync"
 	"sync/atomic"
@@ -52,7 +53,13 @@ func (sc *WebSocketConnection) Release() {
 }
 
 func (sc *WebSocketConnection) Connect(url string, qs chan os.Signal) bool {
-	conn, _, e := websocket.DefaultDialer.Dial(url, nil)
+
+	var headers http.Header
+	if sc._cfg.Headers != nil {
+		headers = sc._cfg.Headers(sc._cfg.Attachment)
+	}
+
+	conn, _, e := websocket.DefaultDialer.Dial(url, headers)
 	if e != nil {
 		logger.Error("websvc:ws:dial %s failed: %s", url, e.Error())
 		if sc._cfg.OnDisconnected != nil {

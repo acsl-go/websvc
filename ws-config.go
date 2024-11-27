@@ -1,6 +1,7 @@
 package websvc
 
 import (
+	"net/http"
 	"sync"
 
 	"github.com/acsl-go/misc"
@@ -8,6 +9,11 @@ import (
 )
 
 type WebSocketConfig struct {
+
+	// [Optional] Used to get the headers for the websocket connection
+	// client side only
+	Headers func(attachment interface{}) http.Header
+
 	// [Optional] Used to do before upgrade operations, such as authentication
 	// If the upgrade is allowed, return 0, <attachment>, nil, the <attachment> will be set to the Attachment of the connection object
 	// If the upgrade is not allowed, the return data will be processed as response.
