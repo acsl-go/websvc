@@ -56,15 +56,18 @@ func WebSocketHandler(cfg *WebSocketHandlerConfig) gin.HandlerFunc {
 		},
 	}
 	return func(c *gin.Context) {
+		var connectionAttachment interface{}
 		if cfg.BeforeUpgrade != nil {
 			code, data, err := cfg.BeforeUpgrade(c, cfg.Attachment)
-			if err == nil && code != 0 {
-				processResp(c, code, data)
-			} else {
+			if err != nil {
 				logger.Error("Error: %+v", err)
 				c.AbortWithStatus(500)
 				return
+			} else if code != 0 {
+				processResp(c, code, data)
+				return
 			}
+			connectionAttachment = data
 		}
 		conn, err := webSocketUpgrader.Upgrade(c.Writer, c.Request, nil)
 		if err != nil {
@@ -80,6 +83,7 @@ func WebSocketHandler(cfg *WebSocketHandlerConfig) gin.HandlerFunc {
 			cli = NewWebSocketConnection(cfg)
 		}
 
+		cli.Attachment = connectionAttachment
 		cli._conn = conn
 		cli._pool = cfg.ConnectionPool
 		cli._refCount = 1

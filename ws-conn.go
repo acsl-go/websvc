@@ -12,6 +12,7 @@ import (
 )
 
 type WebSocketConnection struct {
+	Attachment    interface{}
 	_waitGroup    sync.WaitGroup
 	_quitChan     chan int
 	_sendingQueue chan *misc.Buffer
