@@ -127,12 +127,10 @@ func (sc *WebSocketConnection) run(qs chan os.Signal) bool {
 	sc._conn.SetPingHandler(func(appData string) error {
 		sc._lastBeat = time.Now().UnixMilli()
 		sc._conn.WriteMessage(websocket.PongMessage, nil)
-		println("Ping")
 		return nil
 	})
 	sc._conn.SetPongHandler(func(appData string) error {
 		sc._lastBeat = time.Now().UnixMilli()
-		println("Pong")
 		return nil
 	})
 	sc._waitGroup.Add(3)
@@ -186,7 +184,7 @@ func (sc *WebSocketConnection) beatLoop() {
 				sc.Close()
 				return
 			} else if sc._triggerBeat {
-				println(sc._conn.WriteMessage(websocket.PingMessage, nil))
+				sc._conn.WriteMessage(websocket.PingMessage, nil)
 			}
 		}
 	}
