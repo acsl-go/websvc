@@ -20,7 +20,7 @@ func NewConnectionPool() *sync.Pool {
 	}
 }
 
-func WebSocketTask(url string, cfg *WebSocketHandlerConfig) service.ServiceTask {
+func WebSocketTask(url string, cfg *WebSocketConfig) service.ServiceTask {
 	return func(wg *sync.WaitGroup, qs chan os.Signal) {
 		defer wg.Done()
 		cli := NewWebSocketConnection(cfg)
@@ -44,7 +44,7 @@ func WebSocketTask(url string, cfg *WebSocketHandlerConfig) service.ServiceTask 
 	}
 }
 
-func WebSocketHandler(cfg *WebSocketHandlerConfig) gin.HandlerFunc {
+func WebSocketHandler(cfg *WebSocketConfig) gin.HandlerFunc {
 	if cfg.BufferSize == 0 {
 		cfg.BufferSize = 16384
 	}

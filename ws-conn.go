@@ -19,14 +19,14 @@ type WebSocketConnection struct {
 
 	_conn            *websocket.Conn
 	_pool            *sync.Pool
-	_cfg             *WebSocketHandlerConfig
+	_cfg             *WebSocketConfig
 	_lastBeat        int64
 	_refCount        int32
 	_heartBeatTimout int64
 	_triggerBeat     bool
 }
 
-func NewWebSocketConnection(cfg *WebSocketHandlerConfig) *WebSocketConnection {
+func NewWebSocketConnection(cfg *WebSocketConfig) *WebSocketConnection {
 	return &WebSocketConnection{
 		_quitChan:     make(chan int, 5),
 		_sendingQueue: make(chan *misc.Buffer, 100),

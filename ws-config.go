@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type WebSocketHandlerConfig struct {
+type WebSocketConfig struct {
 	// [Optional] Used to do before upgrade operations, such as authentication
 	// If the upgrade is allowed, return 0, <attachment>, nil, the <attachment> will be set to the Attachment of the connection object
 	// If the upgrade is not allowed, the return data will be processed as response.

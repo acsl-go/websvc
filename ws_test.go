@@ -10,7 +10,7 @@ import (
 
 func TestWSServer(t *testing.T) {
 	service.Run(HttpTask("test", ":11771", func(router *gin.Engine) {
-		router.GET("/ws", WebSocketHandler(&WebSocketHandlerConfig{
+		router.GET("/ws", WebSocketHandler(&WebSocketConfig{
 			OnConnected: func(conn *WebSocketConnection, attachment interface{}) {
 				println("Connected")
 			},
@@ -27,7 +27,7 @@ func TestWSServer(t *testing.T) {
 }
 
 func TestWSClient(t *testing.T) {
-	service.Run(WebSocketTask("ws://localhost:11771/ws", &WebSocketHandlerConfig{
+	service.Run(WebSocketTask("ws://localhost:11771/ws", &WebSocketConfig{
 		OnConnected: func(conn *WebSocketConnection, attachment interface{}) {
 			println("Connected")
 			buf := misc.NewBuffer(1024)
