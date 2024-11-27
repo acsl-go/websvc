@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/acsl-go/logger"
 	"github.com/acsl-go/service"
@@ -23,9 +24,21 @@ func WebSocketTask(url string, cfg *WebSocketHandlerConfig) service.ServiceTask 
 	return func(wg *sync.WaitGroup, qs chan os.Signal) {
 		defer wg.Done()
 		cli := NewWebSocketConnection(cfg)
+		interval := cfg.ReconnectInterval
+		if interval == 0 {
+			interval = 5
+		}
+		reconnectTicker := time.NewTicker(time.Duration(interval) * time.Second)
 		for {
 			if cli.Connect(url, qs) {
-				break
+				return
+			}
+			select {
+			case <-reconnectTicker.C:
+				// DO NOTHING
+			case <-qs:
+				cli.Close()
+				return
 			}
 		}
 	}
