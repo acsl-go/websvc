@@ -230,8 +230,15 @@ func (sc *WebSocketConnection) sendLoop() {
 
 func (sc *WebSocketConnection) recvLoop() {
 	defer sc._waitGroup.Done()
+	conn := sc._conn
 	for {
-		mt, rd, err := sc._conn.NextReader()
+		/*
+			if sc._conn == nil {
+				sc._quitChan <- 1
+				break
+			}
+		*/
+		mt, rd, err := conn.NextReader()
 		if err != nil {
 			logger.Debug("read: %v", err)
 			sc._quitChan <- 1
