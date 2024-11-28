@@ -201,6 +201,9 @@ func (sc *WebSocketConnection) beatLoop() {
 			} else if sc._triggerBeat {
 				sc._conn.WriteMessage(websocket.PingMessage, nil)
 			}
+			if sc._cfg.OnHeartBeat != nil {
+				sc._cfg.OnHeartBeat(sc, sc._cfg.Attachment)
+			}
 		}
 	}
 }

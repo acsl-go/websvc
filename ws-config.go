@@ -28,6 +28,8 @@ type WebSocketConfig struct {
 
 	OnMessage func(conn *WebSocketConnection, msgType int, msg *misc.Buffer, attachment interface{})
 
+	OnHeartBeat func(conn *WebSocketConnection, attachment interface{})
+
 	// [Optional] The connection pool for websocket connections
 	// A connection poll could be created by NewConnectionPool() function
 	// If specified, the connections will be pooled and reused, this will improve performance but may need more memory
