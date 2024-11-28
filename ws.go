@@ -36,8 +36,9 @@ func WebSocketTask(url string, cfg *WebSocketConfig) service.ServiceTask {
 			select {
 			case <-reconnectTicker.C:
 				// DO NOTHING
-			case <-qs:
+			case s := <-qs:
 				cli.Close()
+				qs <- s
 				return
 			}
 		}
