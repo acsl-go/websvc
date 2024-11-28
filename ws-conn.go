@@ -250,6 +250,9 @@ func (sc *WebSocketConnection) recvLoop() {
 				break
 			}
 			p += n
+			if p >= len(buf) {
+				break
+			}
 		}
 		msg.SetDataLen(p)
 		msg.Seek(0, 0)
