@@ -4,7 +4,7 @@ go 1.23.2
 
 require (
 	github.com/acsl-go/logger v0.0.3
-	github.com/acsl-go/misc v0.0.5
+	github.com/acsl-go/misc v0.0.7
 	github.com/acsl-go/service v0.0.4
 	github.com/gin-gonic/gin v1.9.1
 	github.com/gorilla/websocket v1.5.3

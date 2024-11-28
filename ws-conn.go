@@ -122,6 +122,17 @@ func (sc *WebSocketConnection) SendText(msg string) {
 	sc.SendTextBuffer(buf)
 }
 
+func (sc *WebSocketConnection) SendJson(data interface{}) {
+	var buf *misc.Buffer
+	if sc._cfg.BufferPool != nil {
+		buf = sc._cfg.BufferPool.Get()
+	} else {
+		buf = misc.NewBuffer(16384)
+	}
+	buf.WriteJson(data)
+	sc.SendTextBuffer(buf)
+}
+
 func (sc *WebSocketConnection) run(qs chan os.Signal) bool {
 	sc._lastBeat = time.Now().UnixMilli()
 	sc._conn.SetPingHandler(func(appData string) error {
@@ -202,7 +213,10 @@ func (sc *WebSocketConnection) sendLoop() {
 			sc._quitChan <- s
 			return
 		case buf := <-sc._sendingQueue:
-			err := sc._conn.WriteMessage(websocket.BinaryMessage, buf.Bytes())
+			if buf.Tag == 0 {
+				buf.Tag = websocket.TextMessage
+			}
+			err := sc._conn.WriteMessage(buf.Tag, buf.Bytes())
 			if err != nil {
 				return
 			}
