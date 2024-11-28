@@ -242,12 +242,16 @@ func (sc *WebSocketConnection) recvLoop() {
 		} else {
 			msg = misc.NewBuffer(sc._cfg.BufferSize)
 		}
-		n, _ := rd.Read(msg.Buffer())
-		if n <= 0 {
-			msg.Release()
-			break
+		p := 0
+		buf := msg.Buffer()
+		for {
+			n, _ := rd.Read(buf[p:])
+			if n <= 0 {
+				break
+			}
+			p += n
 		}
-		msg.SetDataLen(n)
+		msg.SetDataLen(p)
 		msg.Seek(0, 0)
 		if sc._cfg.OnMessage != nil {
 			sc._cfg.OnMessage(sc, mt, msg.AddRef(), sc._cfg.Attachment)
