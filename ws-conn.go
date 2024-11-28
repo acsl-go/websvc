@@ -133,10 +133,14 @@ func (sc *WebSocketConnection) run(qs chan os.Signal) bool {
 		sc._lastBeat = time.Now().UnixMilli()
 		return nil
 	})
-	sc._waitGroup.Add(3)
+	sc._waitGroup.Add(2)
 	go sc.sendLoop()
 	go sc.recvLoop()
-	go sc.beatLoop()
+
+	if sc._cfg.BeatInterval > 0 {
+		sc._waitGroup.Add(1)
+		go sc.beatLoop()
+	}
 	ret := false
 	if qs != nil {
 		select {

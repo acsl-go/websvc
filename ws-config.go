@@ -45,7 +45,7 @@ type WebSocketConfig struct {
 	BufferSize uint
 
 	// [Optional] The heartbeat interval in seconds
-	// If set to 0, the default value 10s will be used
+	// If set to 0, the heartbeat will be disabled
 	// Heartbeat will be triggered by the client side
 	BeatInterval int
 
