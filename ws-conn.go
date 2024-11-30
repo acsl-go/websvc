@@ -101,34 +101,19 @@ func (sc *WebSocketConnection) SendTextBuffer(msg *misc.Buffer) {
 }
 
 func (sc *WebSocketConnection) SendBytes(data []byte) {
-	var buf *misc.Buffer
-	if sc._cfg.BufferPool != nil {
-		buf = sc._cfg.BufferPool.Get()
-	} else {
-		buf = misc.NewBuffer(uint(len(data)))
-	}
+	buf := sc._alloc_buffer()
 	buf.Write(data)
 	sc.SendBinaryBuffer(buf)
 }
 
 func (sc *WebSocketConnection) SendText(msg string) {
-	var buf *misc.Buffer
-	if sc._cfg.BufferPool != nil {
-		buf = sc._cfg.BufferPool.Get()
-	} else {
-		buf = misc.NewBuffer(uint(len(msg)))
-	}
+	buf := sc._alloc_buffer()
 	buf.Write([]byte(msg))
 	sc.SendTextBuffer(buf)
 }
 
 func (sc *WebSocketConnection) SendJson(data interface{}) {
-	var buf *misc.Buffer
-	if sc._cfg.BufferPool != nil {
-		buf = sc._cfg.BufferPool.Get()
-	} else {
-		buf = misc.NewBuffer(16384)
-	}
+	buf := sc._alloc_buffer()
 	buf.WriteJson(data)
 	sc.SendTextBuffer(buf)
 }
@@ -137,7 +122,9 @@ func (sc *WebSocketConnection) run(qs chan os.Signal) bool {
 	sc._lastBeat = time.Now().UnixMilli()
 	sc._conn.SetPingHandler(func(appData string) error {
 		sc._lastBeat = time.Now().UnixMilli()
-		sc._conn.WriteMessage(websocket.PongMessage, nil)
+		buf := sc._alloc_buffer()
+		buf.Tag = websocket.PongMessage
+		sc._sendingQueue <- buf
 		return nil
 	})
 	sc._conn.SetPongHandler(func(appData string) error {
@@ -199,7 +186,9 @@ func (sc *WebSocketConnection) beatLoop() {
 				sc.Close()
 				return
 			} else if sc._triggerBeat {
-				sc._conn.WriteMessage(websocket.PingMessage, nil)
+				buf := sc._alloc_buffer()
+				buf.Tag = websocket.PingMessage
+				sc._sendingQueue <- buf
 			}
 			if sc._cfg.OnHeartBeat != nil {
 				sc._cfg.OnHeartBeat(sc, sc._cfg.Attachment)
@@ -216,12 +205,19 @@ func (sc *WebSocketConnection) sendLoop() {
 			sc._quitChan <- s
 			return
 		case buf := <-sc._sendingQueue:
-			if buf.Tag == 0 {
-				buf.Tag = websocket.TextMessage
-			}
-			err := sc._conn.WriteMessage(buf.Tag, buf.Bytes())
-			if err != nil {
-				return
+			if buf.Tag == websocket.PingMessage {
+				sc._conn.WriteMessage(websocket.PingMessage, nil)
+			} else if buf.Tag == websocket.PongMessage {
+				sc._conn.WriteMessage(websocket.PongMessage, nil)
+			} else {
+				if buf.Tag == 0 {
+					buf.Tag = websocket.TextMessage
+				}
+				err := sc._conn.WriteMessage(buf.Tag, buf.Bytes())
+				if err != nil {
+					buf.Release()
+					return
+				}
 			}
 			buf.Release()
 		}
@@ -232,26 +228,13 @@ func (sc *WebSocketConnection) recvLoop() {
 	defer sc._waitGroup.Done()
 	conn := sc._conn
 	for {
-		/*
-			if sc._conn == nil {
-				sc._quitChan <- 1
-				break
-			}
-		*/
 		mt, rd, err := conn.NextReader()
 		if err != nil {
-			logger.Debug("read: %v", err)
 			sc._quitChan <- 1
 			break
 		}
 
-		//if mt == websocket.BinaryMessage {
-		var msg *misc.Buffer
-		if sc._cfg.BufferPool != nil {
-			msg = sc._cfg.BufferPool.Get()
-		} else {
-			msg = misc.NewBuffer(sc._cfg.BufferSize)
-		}
+		msg := sc._alloc_buffer()
 		p := 0
 		buf := msg.Buffer()
 		for {
@@ -270,6 +253,15 @@ func (sc *WebSocketConnection) recvLoop() {
 			sc._cfg.OnMessage(sc, mt, msg.AddRef(), sc._cfg.Attachment)
 		}
 		msg.Release()
-		//}
 	}
+}
+
+func (sc *WebSocketConnection) _alloc_buffer() *misc.Buffer {
+	var buf *misc.Buffer
+	if sc._cfg.BufferPool != nil {
+		buf = sc._cfg.BufferPool.Get()
+	} else {
+		buf = misc.NewBuffer(0)
+	}
+	return buf
 }
