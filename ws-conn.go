@@ -24,7 +24,6 @@ type WebSocketConnection struct {
 	_lastBeat        int64
 	_refCount        int32
 	_heartBeatTimout int64
-	_triggerBeat     bool
 }
 
 func NewWebSocketConnection(cfg *WebSocketConfig) *WebSocketConnection {
@@ -35,7 +34,6 @@ func NewWebSocketConnection(cfg *WebSocketConfig) *WebSocketConnection {
 		_pool:         nil,
 		_cfg:          cfg,
 		_refCount:     1,
-		_triggerBeat:  true,
 	}
 }
 
@@ -185,7 +183,7 @@ func (sc *WebSocketConnection) beatLoop() {
 			if ts-sc._lastBeat > sc._heartBeatTimout {
 				sc.Close()
 				return
-			} else if sc._triggerBeat {
+			} else if sc._cfg.HandlePing {
 				buf := sc._alloc_buffer()
 				buf.Tag = websocket.PingMessage
 				sc._sendingQueue <- buf

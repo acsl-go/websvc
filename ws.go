@@ -89,7 +89,6 @@ func WebSocketHandler(cfg *WebSocketConfig) gin.HandlerFunc {
 		cli._pool = cfg.ConnectionPool
 		cli._refCount = 1
 		cli._cfg = cfg
-		cli._triggerBeat = false // Disable heartbeat sender for server side
 
 		if cfg.OnConnected != nil {
 			cfg.OnConnected(cli, cfg.Attachment)

@@ -59,6 +59,10 @@ type WebSocketConfig struct {
 	// If set to 0, the default value 5s will be used
 	ReconnectInterval int
 
+	// [Optional] Determine the connection is ping side or pong side
+	// If set to true, the connection will send ping messages to the other side
+	HandlePing bool
+
 	// User-defined attachment
 	// The attachment will be passed to all handle functions in this config
 	Attachment interface{}
