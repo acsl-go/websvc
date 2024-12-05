@@ -197,6 +197,7 @@ func (sc *WebSocketConnection) beatLoop() {
 
 func (sc *WebSocketConnection) sendLoop() {
 	defer sc._waitGroup.Done()
+	conn := sc._conn
 	for {
 		select {
 		case s := <-sc._quitChan:
@@ -204,14 +205,14 @@ func (sc *WebSocketConnection) sendLoop() {
 			return
 		case buf := <-sc._sendingQueue:
 			if buf.Tag == websocket.PingMessage {
-				sc._conn.WriteMessage(websocket.PingMessage, nil)
+				conn.WriteMessage(websocket.PingMessage, nil)
 			} else if buf.Tag == websocket.PongMessage {
-				sc._conn.WriteMessage(websocket.PongMessage, nil)
+				conn.WriteMessage(websocket.PongMessage, nil)
 			} else {
 				if buf.Tag == 0 {
 					buf.Tag = websocket.TextMessage
 				}
-				err := sc._conn.WriteMessage(buf.Tag, buf.Bytes())
+				err := conn.WriteMessage(buf.Tag, buf.Bytes())
 				if err != nil {
 					buf.Release()
 					return
