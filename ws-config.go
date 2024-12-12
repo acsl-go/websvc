@@ -63,6 +63,10 @@ type WebSocketConfig struct {
 	// If set to true, the connection will send ping messages to the other side
 	HandlePing bool
 
+	// [Optional] SOCKS5 proxy address
+	// IP:Port format, e.g. 127.0.0.1:1080
+	Socks5Proxy string
+
 	// User-defined attachment
 	// The attachment will be passed to all handle functions in this config
 	Attachment interface{}

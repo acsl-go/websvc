@@ -1,6 +1,7 @@
 package websvc
 
 import (
+	"net"
 	"net/http"
 	"os"
 	"sync"
@@ -10,6 +11,7 @@ import (
 	"github.com/acsl-go/logger"
 	"github.com/acsl-go/misc"
 	"github.com/gorilla/websocket"
+	"golang.org/x/net/proxy"
 )
 
 type WebSocketConnection struct {
@@ -57,7 +59,28 @@ func (sc *WebSocketConnection) Connect(url string, qs chan os.Signal) bool {
 		headers = sc._cfg.Headers(sc._cfg.Attachment)
 	}
 
-	conn, _, e := websocket.DefaultDialer.Dial(url, headers)
+	dialer := websocket.DefaultDialer
+
+	if sc._cfg.Socks5Proxy != "" {
+
+		socks5Dialer, err := proxy.SOCKS5("tcp", "", nil, proxy.Direct)
+		if err != nil {
+			logger.Error("websvc:ws:dial %s failed: %s", url, err.Error())
+			if sc._cfg.OnDisconnected != nil {
+				sc._cfg.OnDisconnected(sc, sc._cfg.Attachment)
+			}
+			return false
+		}
+
+		dialer = &websocket.Dialer{
+			NetDial: func(network, addr string) (net.Conn, error) {
+				return socks5Dialer.Dial(network, addr)
+			},
+		}
+
+	}
+
+	conn, _, e := dialer.Dial(url, headers)
 	if e != nil {
 		logger.Error("websvc:ws:dial %s failed: %s", url, e.Error())
 		if sc._cfg.OnDisconnected != nil {
