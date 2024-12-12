@@ -63,7 +63,7 @@ func (sc *WebSocketConnection) Connect(url string, qs chan os.Signal) bool {
 
 	if sc._cfg.Socks5Proxy != "" {
 
-		socks5Dialer, err := proxy.SOCKS5("tcp", "", nil, proxy.Direct)
+		socks5Dialer, err := proxy.SOCKS5("tcp", sc._cfg.Socks5Proxy, nil, proxy.Direct)
 		if err != nil {
 			logger.Error("websvc:ws:dial %s failed: %s", url, err.Error())
 			if sc._cfg.OnDisconnected != nil {
