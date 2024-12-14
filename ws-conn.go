@@ -192,7 +192,7 @@ func (sc *WebSocketConnection) beatLoop() {
 	}
 
 	nextPing := int64(0x7FFFFFFFFFFFFFFF)
-	if sc._cfg.PingInterval == 0 {
+	if sc._cfg.PingInterval > 0 {
 		nextPing = time.Now().UnixMilli() + int64(sc._cfg.PingInterval)
 	}
 
