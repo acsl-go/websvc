@@ -193,12 +193,12 @@ func (sc *WebSocketConnection) beatLoop() {
 
 	nextPing := int64(0x7FFFFFFFFFFFFFFF)
 	if sc._cfg.PingInterval == 0 {
-		nextPing = time.Now().UnixMilli() + int64(sc._cfg.PingInterval*1000)
+		nextPing = time.Now().UnixMilli() + int64(sc._cfg.PingInterval)
 	}
 
 	beatTimout := int64(0x7FFFFFFFFFFFFFFF)
 	if sc._cfg.BeatTimeout > 0 {
-		beatTimout = int64(sc._cfg.BeatTimeout * 1000)
+		beatTimout = int64(sc._cfg.BeatTimeout)
 	}
 
 	tick := time.NewTicker(beatInterval)
@@ -220,7 +220,7 @@ func (sc *WebSocketConnection) beatLoop() {
 				if sc._cfg.OnSendPing != nil {
 					sc._cfg.OnSendPing(sc, sc._cfg.Attachment)
 				}
-				nextPing = ts + int64(sc._cfg.PingInterval*1000)
+				nextPing = ts + int64(sc._cfg.PingInterval)
 			}
 
 			if ts-sc._lastBeat > beatTimout {
