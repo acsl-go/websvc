@@ -20,12 +20,11 @@ type WebSocketConnection struct {
 	_quitChan     chan int
 	_sendingQueue chan *misc.Buffer
 
-	_conn            *websocket.Conn
-	_pool            *sync.Pool
-	_cfg             *WebSocketConfig
-	_lastBeat        int64
-	_refCount        int32
-	_heartBeatTimout int64
+	_conn     *websocket.Conn
+	_pool     *sync.Pool
+	_cfg      *WebSocketConfig
+	_lastBeat int64
+	_refCount int32
 }
 
 func NewWebSocketConnection(cfg *WebSocketConfig) *WebSocketConnection {
@@ -187,14 +186,21 @@ func (sc *WebSocketConnection) run(qs chan os.Signal) bool {
 
 func (sc *WebSocketConnection) beatLoop() {
 	defer sc._waitGroup.Done()
-	beatInterval := time.Second * time.Duration(sc._cfg.BeatInterval)
+	beatInterval := time.Millisecond * time.Duration(sc._cfg.BeatInterval)
 	if beatInterval == 0 {
 		beatInterval = time.Second * 10
 	}
-	sc._heartBeatTimout = int64(sc._cfg.BeatTimeout * 1000)
-	if sc._heartBeatTimout == 0 {
-		sc._heartBeatTimout = int64(sc._cfg.BeatInterval * 3000)
+
+	nextPing := int64(0x7FFFFFFFFFFFFFFF)
+	if sc._cfg.PingInterval == 0 {
+		nextPing = time.Now().UnixMilli() + int64(sc._cfg.PingInterval*1000)
 	}
+
+	beatTimout := int64(0x7FFFFFFFFFFFFFFF)
+	if sc._cfg.BeatTimeout > 0 {
+		beatTimout = int64(sc._cfg.BeatTimeout * 1000)
+	}
+
 	tick := time.NewTicker(beatInterval)
 	for {
 		select {
@@ -203,16 +209,23 @@ func (sc *WebSocketConnection) beatLoop() {
 			return
 		case <-tick.C:
 			ts := time.Now().UnixMilli()
-			if ts-sc._lastBeat > sc._heartBeatTimout {
-				sc.Close()
-				return
-			} else if sc._cfg.HandlePing {
+			if sc._cfg.OnBeat != nil {
+				sc._cfg.OnBeat(sc, sc._cfg.Attachment)
+			}
+
+			if ts >= nextPing {
 				buf := sc._alloc_buffer()
 				buf.Tag = websocket.PingMessage
 				sc._sendingQueue <- buf
+				if sc._cfg.OnSendPing != nil {
+					sc._cfg.OnSendPing(sc, sc._cfg.Attachment)
+				}
+				nextPing = ts + int64(sc._cfg.PingInterval*1000)
 			}
-			if sc._cfg.OnHeartBeat != nil {
-				sc._cfg.OnHeartBeat(sc, sc._cfg.Attachment)
+
+			if ts-sc._lastBeat > beatTimout {
+				sc.Close()
+				return
 			}
 		}
 	}

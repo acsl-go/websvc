@@ -28,7 +28,9 @@ type WebSocketConfig struct {
 
 	OnMessage func(conn *WebSocketConnection, msgType int, msg *misc.Buffer, attachment interface{})
 
-	OnHeartBeat func(conn *WebSocketConnection, attachment interface{})
+	OnBeat func(conn *WebSocketConnection, attachment interface{})
+
+	OnSendPing func(conn *WebSocketConnection, attachment interface{})
 
 	// [Optional] The connection pool for websocket connections
 	// A connection poll could be created by NewConnectionPool() function
@@ -46,22 +48,24 @@ type WebSocketConfig struct {
 	// If BufferPool is nil, this value must be specified and will be used to create a buffer pool
 	BufferSize uint
 
-	// [Optional] The heartbeat interval in seconds
+	// [Optional] The heartbeat interval in milliseconds
 	// If set to 0, the heartbeat will be disabled
 	// Heartbeat will be triggered by the client side
 	BeatInterval int
 
+	// [Optional] The ping interval in seconds
+	// Should be greater than BeatInterval
+	// The actual ping interval will be set to multiple of BeatInterval
+	// If set to 0, will not send ping messages
+	PingInterval int
+
 	// [Optional] The heartbeat timeout in seconds
-	// If set to 0, the heartbeat timeout will be set to BeatInterval * 3
+	// If set to 0, will not check heartbeat timeout
 	BeatTimeout int
 
 	// [Optional] The reconnect interval in seconds, client side only
 	// If set to 0, the default value 5s will be used
 	ReconnectInterval int
-
-	// [Optional] Determine the connection is ping side or pong side
-	// If set to true, the connection will send ping messages to the other side
-	HandlePing bool
 
 	// [Optional] SOCKS5 proxy address
 	// IP:Port format, e.g. 127.0.0.1:1080
