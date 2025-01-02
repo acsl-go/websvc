@@ -92,9 +92,6 @@ func (sc *WebSocketConnection) Connect(url string, qs chan os.Signal) bool {
 			sc._cfg.OnConnected(sc, sc._cfg.Attachment)
 		}
 		ret := sc.run(qs)
-		if sc._cfg.OnDisconnected != nil {
-			sc._cfg.OnDisconnected(sc, sc._cfg.Attachment)
-		}
 		return ret
 	}
 }
@@ -107,32 +104,53 @@ func (sc *WebSocketConnection) Close() {
 }
 
 func (sc *WebSocketConnection) Send(msg *misc.Buffer) {
+	if sc._conn == nil {
+		msg.Release()
+		return
+	}
 	sc._sendingQueue <- msg
 }
 
 func (sc *WebSocketConnection) SendBinaryBuffer(msg *misc.Buffer) {
+	if sc._conn == nil {
+		msg.Release()
+		return
+	}
 	msg.Tag = websocket.BinaryMessage
 	sc._sendingQueue <- msg
 }
 
 func (sc *WebSocketConnection) SendTextBuffer(msg *misc.Buffer) {
+	if sc._conn == nil {
+		msg.Release()
+		return
+	}
 	msg.Tag = websocket.TextMessage
 	sc._sendingQueue <- msg
 }
 
 func (sc *WebSocketConnection) SendBytes(data []byte) {
+	if sc._conn == nil {
+		return
+	}
 	buf := sc._alloc_buffer()
 	buf.Write(data)
 	sc.SendBinaryBuffer(buf)
 }
 
 func (sc *WebSocketConnection) SendText(msg string) {
+	if sc._conn == nil {
+		return
+	}
 	buf := sc._alloc_buffer()
 	buf.Write([]byte(msg))
 	sc.SendTextBuffer(buf)
 }
 
 func (sc *WebSocketConnection) SendJson(data interface{}) {
+	if sc._conn == nil {
+		return
+	}
 	buf := sc._alloc_buffer()
 	buf.WriteJson(data)
 	sc.SendTextBuffer(buf)
@@ -172,6 +190,9 @@ func (sc *WebSocketConnection) run(qs chan os.Signal) bool {
 	}
 	sc._waitGroup.Wait()
 	sc.Close()
+	if sc._cfg.OnDisconnected != nil {
+		sc._cfg.OnDisconnected(sc, sc._cfg.Attachment)
+	}
 	for {
 		select {
 		case wm := <-sc._sendingQueue:
