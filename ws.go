@@ -94,9 +94,6 @@ func WebSocketHandler(cfg *WebSocketConfig) gin.HandlerFunc {
 			cfg.OnConnected(cli, cfg.Attachment)
 		}
 		cli.run(nil)
-		if cfg.OnDisconnected != nil {
-			cfg.OnDisconnected(cli, cfg.Attachment)
-		}
 		cli.Release()
 
 	}
