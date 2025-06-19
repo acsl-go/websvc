@@ -157,39 +157,44 @@ func (sc *WebSocketConnection) SendJson(data interface{}) {
 }
 
 func (sc *WebSocketConnection) run(qs chan os.Signal) bool {
-	sc._lastBeat = time.Now().UnixMilli()
-	sc._conn.SetPingHandler(func(appData string) error {
+	ret := true
+	// Check the connection object, upper layer may have closed the connection in the onConnected callback.
+	if sc._conn != nil {
 		sc._lastBeat = time.Now().UnixMilli()
-		buf := sc._alloc_buffer()
-		buf.Tag = websocket.PongMessage
-		sc._sendingQueue <- buf
-		return nil
-	})
-	sc._conn.SetPongHandler(func(appData string) error {
-		sc._lastBeat = time.Now().UnixMilli()
-		return nil
-	})
-	sc._waitGroup.Add(2)
-	go sc.sendLoop()
-	go sc.recvLoop()
+		sc._conn.SetPingHandler(func(appData string) error {
+			sc._lastBeat = time.Now().UnixMilli()
+			buf := sc._alloc_buffer()
+			buf.Tag = websocket.PongMessage
+			sc._sendingQueue <- buf
+			return nil
+		})
+		sc._conn.SetPongHandler(func(appData string) error {
+			sc._lastBeat = time.Now().UnixMilli()
+			return nil
+		})
+		sc._waitGroup.Add(2)
+		go sc.sendLoop()
+		go sc.recvLoop()
 
-	if sc._cfg.BeatInterval > 0 {
-		sc._waitGroup.Add(1)
-		go sc.beatLoop()
-	}
-	ret := false
-	if qs != nil {
-		select {
-		case s := <-sc._quitChan:
-			sc._quitChan <- s
-		case s := <-qs:
-			sc.Close()
-			qs <- s
-			ret = true
+		if sc._cfg.BeatInterval > 0 {
+			sc._waitGroup.Add(1)
+			go sc.beatLoop()
 		}
+
+		ret = false
+		if qs != nil {
+			select {
+			case s := <-sc._quitChan:
+				sc._quitChan <- s
+			case s := <-qs:
+				sc.Close()
+				qs <- s
+				ret = true
+			}
+		}
+		sc._waitGroup.Wait()
+		sc.Close()
 	}
-	sc._waitGroup.Wait()
-	sc.Close()
 	if sc._cfg.OnDisconnected != nil {
 		sc._cfg.OnDisconnected(sc, sc._cfg.Attachment)
 	}
