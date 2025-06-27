@@ -108,6 +108,10 @@ func (sc *WebSocketConnection) Send(msg *misc.Buffer) {
 		msg.Release()
 		return
 	}
+	// Ensure the message tag is set correctly.
+	if msg.Tag < 0 || msg.Tag > 2 {
+		msg.Tag = 0
+	}
 	sc._sendingQueue <- msg
 }
 
