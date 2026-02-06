@@ -30,7 +30,7 @@ func WebSocketTask(url string, cfg *WebSocketConfig) service.ServiceTask {
 		}
 		reconnectTicker := time.NewTicker(time.Duration(interval) * time.Second)
 		for {
-			if cli.Connect(url, qs) {
+			if !cli.Connect(url, qs) {
 				return
 			}
 			select {

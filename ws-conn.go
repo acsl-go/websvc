@@ -259,7 +259,7 @@ func (sc *WebSocketConnection) beatLoop() {
 			}
 
 			if ts-sc._lastBeat > beatTimout {
-				sc._conn.Close()
+				sc._quitChan <- 1
 				return
 			}
 		}
