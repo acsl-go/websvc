@@ -25,6 +25,8 @@ type WebSocketConnection struct {
 	_cfg      *WebSocketConfig
 	_lastBeat int64
 	_refCount int32
+
+	_running bool
 }
 
 func NewWebSocketConnection(cfg *WebSocketConfig) *WebSocketConnection {
@@ -79,6 +81,8 @@ func (sc *WebSocketConnection) Connect(url string, qs chan os.Signal) bool {
 
 	}
 
+	sc._running = true
+
 	conn, _, e := dialer.Dial(url, headers)
 	if e != nil {
 		logger.Error("websvc:ws:dial %s failed: %s", url, e.Error())
@@ -91,12 +95,13 @@ func (sc *WebSocketConnection) Connect(url string, qs chan os.Signal) bool {
 		if sc._cfg.OnConnected != nil {
 			sc._cfg.OnConnected(sc, sc._cfg.Attachment)
 		}
-		ret := sc.run(qs)
-		return ret
+		sc.run(qs)
+		return sc._running
 	}
 }
 
 func (sc *WebSocketConnection) Close() {
+	sc._running = false
 	if sc._conn != nil {
 		sc._conn.Close()
 		sc._conn = nil
@@ -160,8 +165,7 @@ func (sc *WebSocketConnection) SendJson(data interface{}) {
 	sc.SendTextBuffer(buf)
 }
 
-func (sc *WebSocketConnection) run(qs chan os.Signal) bool {
-	ret := true
+func (sc *WebSocketConnection) run(qs chan os.Signal) {
 	// Check the connection object, upper layer may have closed the connection in the onConnected callback.
 	if sc._conn != nil {
 		sc._lastBeat = time.Now().UnixMilli()
@@ -185,7 +189,6 @@ func (sc *WebSocketConnection) run(qs chan os.Signal) bool {
 			go sc.beatLoop()
 		}
 
-		ret = false
 		if qs != nil {
 			select {
 			case s := <-sc._quitChan:
@@ -193,11 +196,13 @@ func (sc *WebSocketConnection) run(qs chan os.Signal) bool {
 			case s := <-qs:
 				sc.Close()
 				qs <- s
-				ret = true
 			}
 		}
 		sc._waitGroup.Wait()
-		sc.Close()
+		if sc._conn != nil {
+			sc._conn.Close()
+			sc._conn = nil
+		}
 	}
 	if sc._cfg.OnDisconnected != nil {
 		sc._cfg.OnDisconnected(sc, sc._cfg.Attachment)
@@ -209,7 +214,7 @@ func (sc *WebSocketConnection) run(qs chan os.Signal) bool {
 		case <-sc._quitChan:
 			// DO NOTHING
 		default:
-			return ret
+			return
 		}
 	}
 }
@@ -254,7 +259,7 @@ func (sc *WebSocketConnection) beatLoop() {
 			}
 
 			if ts-sc._lastBeat > beatTimout {
-				sc.Close()
+				sc._conn.Close()
 				return
 			}
 		}
