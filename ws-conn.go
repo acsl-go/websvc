@@ -108,6 +108,14 @@ func (sc *WebSocketConnection) Close() {
 	}
 }
 
+// 断开，还会重新连接
+func (sc *WebSocketConnection) Disconnect() {
+	if sc._conn != nil {
+		sc._conn.Close()
+		sc._conn = nil
+	}
+}
+
 func (sc *WebSocketConnection) Send(msg *misc.Buffer) {
 	if sc._conn == nil {
 		msg.Release()
