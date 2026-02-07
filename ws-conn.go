@@ -55,6 +55,8 @@ func (sc *WebSocketConnection) Release() {
 
 func (sc *WebSocketConnection) Connect(url string, qs chan os.Signal) bool {
 
+	sc._running = true
+
 	var headers http.Header
 	if sc._cfg.Headers != nil {
 		headers = sc._cfg.Headers(sc._cfg.Attachment)
@@ -70,7 +72,7 @@ func (sc *WebSocketConnection) Connect(url string, qs chan os.Signal) bool {
 			if sc._cfg.OnDisconnected != nil {
 				sc._cfg.OnDisconnected(sc, sc._cfg.Attachment)
 			}
-			return false
+			return sc._running
 		}
 
 		dialer = &websocket.Dialer{
@@ -81,15 +83,13 @@ func (sc *WebSocketConnection) Connect(url string, qs chan os.Signal) bool {
 
 	}
 
-	sc._running = true
-
 	conn, _, e := dialer.Dial(url, headers)
 	if e != nil {
 		logger.Error("websvc:ws:dial %s failed: %s", url, e.Error())
 		if sc._cfg.OnDisconnected != nil {
 			sc._cfg.OnDisconnected(sc, sc._cfg.Attachment)
 		}
-		return false
+		return sc._running
 	} else {
 		sc._conn = conn
 		if sc._cfg.OnConnected != nil {
