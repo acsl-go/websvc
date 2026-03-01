@@ -91,11 +91,16 @@ func WebSocketHandler(cfg *WebSocketConfig) gin.HandlerFunc {
 		cli._refCount = 1
 		cli._cfg = cfg
 
-		if cli._sendingQueue == nil || cli._cfg.SendingQueueSize != cap(cli._sendingQueue) {
+		sendingQueueSize := cfg.SendingQueueSize
+		if sendingQueueSize <= 0 {
+			sendingQueueSize = 100
+		}
+
+		if cli._sendingQueue == nil || sendingQueueSize != cap(cli._sendingQueue) {
 			if cli._sendingQueue != nil {
 				close(cli._sendingQueue)
 			}
-			cli._sendingQueue = make(chan *misc.Buffer, cli._cfg.SendingQueueSize)
+			cli._sendingQueue = make(chan *misc.Buffer, sendingQueueSize)
 		}
 
 		if cfg.OnConnected != nil {
