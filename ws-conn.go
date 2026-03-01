@@ -30,9 +30,13 @@ type WebSocketConnection struct {
 }
 
 func NewWebSocketConnection(cfg *WebSocketConfig) *WebSocketConnection {
+	sendingQueueSize := cfg.SendingQueueSize
+	if sendingQueueSize <= 0 {
+		sendingQueueSize = 100
+	}
 	return &WebSocketConnection{
 		_quitChan:     make(chan int, 5),
-		_sendingQueue: make(chan *misc.Buffer, 100),
+		_sendingQueue: make(chan *misc.Buffer, sendingQueueSize),
 		_conn:         nil,
 		_pool:         nil,
 		_cfg:          cfg,

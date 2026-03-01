@@ -71,6 +71,10 @@ type WebSocketConfig struct {
 	// IP:Port format, e.g. 127.0.0.1:1080
 	Socks5Proxy string
 
+	// [Optional] Sending queue size for websocket connections
+	// If set to 0, the default value 100 will be used
+	SendingQueueSize int
+
 	// User-defined attachment
 	// The attachment will be passed to all handle functions in this config
 	Attachment interface{}
