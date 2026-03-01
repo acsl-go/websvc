@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/acsl-go/logger"
+	"github.com/acsl-go/misc"
 	"github.com/acsl-go/service"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -89,6 +90,13 @@ func WebSocketHandler(cfg *WebSocketConfig) gin.HandlerFunc {
 		cli._pool = cfg.ConnectionPool
 		cli._refCount = 1
 		cli._cfg = cfg
+
+		if cli._sendingQueue == nil || cli._cfg.SendingQueueSize != cap(cli._sendingQueue) {
+			if cli._sendingQueue != nil {
+				close(cli._sendingQueue)
+			}
+			cli._sendingQueue = make(chan *misc.Buffer, cli._cfg.SendingQueueSize)
+		}
 
 		if cfg.OnConnected != nil {
 			cfg.OnConnected(cli, cfg.Attachment)
