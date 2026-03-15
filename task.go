@@ -1,6 +1,7 @@
 package websvc
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -9,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func NewHandler(initializer func(*gin.Engine)) http.Handler {
+func NewHandler(ctx context.Context, initializer func(context.Context, *gin.Engine)) http.Handler {
 	if logger.Level >= logger.DEBUG {
 		gin.SetMode(gin.DebugMode)
 	} else {
@@ -22,11 +23,11 @@ func NewHandler(initializer func(*gin.Engine)) http.Handler {
 		router.Use(gin.Logger())
 	}
 
-	initializer(router)
+	initializer(ctx, router)
 	return router
 }
 
-func Task(name string, config *Config, initializer func(*gin.Engine)) service.ServiceTask {
+func Task(name string, config *Config, initializer func(context.Context, *gin.Engine)) service.ServiceTask {
 	if config.SSLCert != "" && config.SSLKey != "" {
 		if config.Port == 0 {
 			config.Port = 443
@@ -40,10 +41,14 @@ func Task(name string, config *Config, initializer func(*gin.Engine)) service.Se
 	}
 }
 
-func HttpTask(name, addr string, initializer func(*gin.Engine)) service.ServiceTask {
-	return service.HttpServer(name, addr, NewHandler(initializer))
+func HttpTask(name, addr string, initializer func(context.Context, *gin.Engine)) service.ServiceTask {
+	return service.HttpServer(name, addr, func(ctx context.Context) http.Handler {
+		return NewHandler(ctx, initializer)
+	})
 }
 
-func HttpsTask(name, addr, certFile, keyFile string, initializer func(*gin.Engine)) service.ServiceTask {
-	return service.HttpsServer(name, addr, certFile, keyFile, NewHandler(initializer))
+func HttpsTask(name, addr, certFile, keyFile string, initializer func(context.Context, *gin.Engine)) service.ServiceTask {
+	return service.HttpsServer(name, addr, certFile, keyFile, func(ctx context.Context) http.Handler {
+		return NewHandler(ctx, initializer)
+	})
 }

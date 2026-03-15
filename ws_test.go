@@ -10,8 +10,8 @@ import (
 )
 
 func TestWSServer(t *testing.T) {
-	service.Run(HttpTask("test", ":11771", func(router *gin.Engine) {
-		router.GET("/ws", WebSocketHandler(context.TODO(), &WebSocketConfig{
+	service.Run(HttpTask("test", ":11771", func(ctx context.Context, router *gin.Engine) {
+		router.GET("/ws", WebSocketHandler(ctx, &WebSocketConfig{
 			OnConnected: func(conn *WebSocketConnection, attachment interface{}) {
 				println("Connected")
 			},
