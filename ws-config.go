@@ -75,6 +75,10 @@ type WebSocketConfig struct {
 	// If set to 0, the default value 100 will be used
 	SendingQueueSize int
 
+	// [Optional] Timeout for websocket connection in seconds, client side only
+	// The default value is 10s, if set to 0, the default value will be used
+	ConnectTimeout int
+
 	// User-defined attachment
 	// The attachment will be passed to all handle functions in this config
 	Attachment interface{}

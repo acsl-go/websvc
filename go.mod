@@ -5,9 +5,10 @@ go 1.23.2
 require (
 	github.com/acsl-go/logger v0.0.3
 	github.com/acsl-go/misc v0.0.7
-	github.com/acsl-go/service v0.0.4
+	github.com/acsl-go/service v0.0.5
 	github.com/gin-gonic/gin v1.9.1
 	github.com/gorilla/websocket v1.5.3
+	golang.org/x/net v0.10.0
 )
 
 require (
@@ -32,7 +33,6 @@ require (
 	github.com/ugorji/go/codec v1.2.11 // indirect
 	golang.org/x/arch v0.3.0 // indirect
 	golang.org/x/crypto v0.9.0 // indirect
-	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/sys v0.8.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect

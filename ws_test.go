@@ -1,6 +1,7 @@
 package websvc
 
 import (
+	"context"
 	"testing"
 
 	"github.com/acsl-go/misc"
@@ -10,7 +11,7 @@ import (
 
 func TestWSServer(t *testing.T) {
 	service.Run(HttpTask("test", ":11771", func(router *gin.Engine) {
-		router.GET("/ws", WebSocketHandler(&WebSocketConfig{
+		router.GET("/ws", WebSocketHandler(context.TODO(), &WebSocketConfig{
 			OnConnected: func(conn *WebSocketConnection, attachment interface{}) {
 				println("Connected")
 			},

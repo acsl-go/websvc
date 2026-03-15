@@ -1,9 +1,9 @@
 package websvc
 
 import (
+	"context"
 	"net"
 	"net/http"
-	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -68,7 +68,7 @@ func (sc *WebSocketConnection) Release() {
 	}
 }
 
-func (sc *WebSocketConnection) Connect(url string, qs chan os.Signal) bool {
+func (sc *WebSocketConnection) Connect(ctx context.Context, url string, timeout time.Duration) bool {
 
 	sc._running = true
 
@@ -98,7 +98,8 @@ func (sc *WebSocketConnection) Connect(url string, qs chan os.Signal) bool {
 
 	}
 
-	conn, _, e := dialer.Dial(url, headers)
+	timeoutCtx, _ := context.WithTimeout(ctx, timeout)
+	conn, _, e := dialer.DialContext(timeoutCtx, url, headers)
 	if e != nil {
 		logger.Error("websvc:ws:dial %s failed: %s", url, e.Error())
 		if sc._cfg.OnDisconnected != nil {
@@ -110,7 +111,7 @@ func (sc *WebSocketConnection) Connect(url string, qs chan os.Signal) bool {
 		if sc._cfg.OnConnected != nil {
 			sc._cfg.OnConnected(sc, sc._cfg.Attachment)
 		}
-		sc.run(qs)
+		sc.run(ctx)
 		return sc._running
 	}
 }
@@ -188,7 +189,7 @@ func (sc *WebSocketConnection) SendJson(data interface{}) {
 	sc.SendTextBuffer(buf)
 }
 
-func (sc *WebSocketConnection) run(qs chan os.Signal) {
+func (sc *WebSocketConnection) run(ctx context.Context) {
 	// Check the connection object, upper layer may have closed the connection in the onConnected callback.
 	if sc._conn != nil {
 		sc._lastBeat = time.Now().UnixMilli()
@@ -212,15 +213,13 @@ func (sc *WebSocketConnection) run(qs chan os.Signal) {
 			go sc.beatLoop()
 		}
 
-		if qs != nil {
-			select {
-			case s := <-sc._quitChan:
-				sc._quitChan <- s
-			case s := <-qs:
-				sc.Close()
-				qs <- s
-			}
+		select {
+		case s := <-sc._quitChan:
+			sc._quitChan <- s
+		case <-ctx.Done():
+			sc.Close()
 		}
+
 		sc._waitGroup.Wait()
 		if sc._conn != nil {
 			sc._conn.Close()

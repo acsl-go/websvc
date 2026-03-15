@@ -1,8 +1,8 @@
 package websvc
 
 import (
+	"context"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 
@@ -22,31 +22,32 @@ func NewConnectionPool() *sync.Pool {
 }
 
 func WebSocketTask(url string, cfg *WebSocketConfig) service.ServiceTask {
-	return func(wg *sync.WaitGroup, qs chan os.Signal) {
-		defer wg.Done()
+	return func(ctx context.Context) {
 		cli := NewWebSocketConnection(cfg)
 		interval := cfg.ReconnectInterval
 		if interval == 0 {
 			interval = 5
 		}
+		if cfg.ConnectTimeout == 0 {
+			cfg.ConnectTimeout = 10
+		}
 		reconnectTicker := time.NewTicker(time.Duration(interval) * time.Second)
 		for {
-			if !cli.Connect(url, qs) {
+			if !cli.Connect(ctx, url, time.Duration(cfg.ConnectTimeout)*time.Second) {
 				return
 			}
 			select {
 			case <-reconnectTicker.C:
 				// DO NOTHING
-			case s := <-qs:
+			case <-ctx.Done():
 				cli.Close()
-				qs <- s
 				return
 			}
 		}
 	}
 }
 
-func WebSocketHandler(cfg *WebSocketConfig) gin.HandlerFunc {
+func WebSocketHandler(ctx context.Context, cfg *WebSocketConfig) gin.HandlerFunc {
 	if cfg.BufferSize == 0 {
 		cfg.BufferSize = 16384
 	}
@@ -106,7 +107,7 @@ func WebSocketHandler(cfg *WebSocketConfig) gin.HandlerFunc {
 		if cfg.OnConnected != nil {
 			cfg.OnConnected(cli, cfg.Attachment)
 		}
-		cli.run(nil)
+		cli.run(ctx)
 		cli.Release()
 
 	}
