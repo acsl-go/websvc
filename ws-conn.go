@@ -98,7 +98,8 @@ func (sc *WebSocketConnection) Connect(ctx context.Context, url string, timeout 
 
 	}
 
-	timeoutCtx, _ := context.WithTimeout(ctx, timeout)
+	timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 	conn, _, e := dialer.DialContext(timeoutCtx, url, headers)
 	if e != nil {
 		logger.Error("websvc:ws:dial %s failed: %s", url, e.Error())
