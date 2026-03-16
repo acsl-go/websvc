@@ -17,7 +17,7 @@ func loadData(fileOrData string) ([]byte, error) {
 }
 
 func loadX509KeyPair(certFile, keyFile string) (*tls.Certificate, []*x509.Certificate, error) {
-	certs, err := loadCertsFromPEM(certFile)
+	certs, raw, err := loadCertsFromPEM(certFile)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -28,13 +28,13 @@ func loadX509KeyPair(certFile, keyFile string) (*tls.Certificate, []*x509.Certif
 	}
 
 	return &tls.Certificate{
-		Certificate: [][]byte{},
+		Certificate: raw,
 		PrivateKey:  key,
 		Leaf:        certs[0],
 	}, certs, nil
 }
 
-func loadCertsFromPEM(fileOrData string) ([]*x509.Certificate, error) {
+func loadCertsFromPEM(fileOrData string) ([]*x509.Certificate, [][]byte, error) {
 	// Attempt to load from file first
 	if _, err := os.Stat(fileOrData); err == nil {
 		return loadCertsFromPEMFile(fileOrData)
@@ -43,29 +43,31 @@ func loadCertsFromPEM(fileOrData string) ([]*x509.Certificate, error) {
 	return loadCertsFromPEMData([]byte(fileOrData))
 }
 
-func loadCertsFromPEMData(certData []byte) ([]*x509.Certificate, error) {
+func loadCertsFromPEMData(certData []byte) ([]*x509.Certificate, [][]byte, error) {
 	certs := []*x509.Certificate{}
+	raw := [][]byte{}
 	for {
 		certBlock, certData := pem.Decode(certData)
 		if certBlock == nil || certBlock.Type != "CERTIFICATE" {
-			return nil, ErrInvalidCertificate
+			return nil, nil, ErrInvalidCertificate
 		}
 		cert, err := x509.ParseCertificate(certBlock.Bytes)
 		if err != nil {
-			return nil, ErrInvalidCertificate
+			return nil, nil, ErrInvalidCertificate
 		}
 		certs = append(certs, cert)
+		raw = append(raw, certBlock.Bytes)
 		if len(certData) == 0 {
 			break
 		}
 	}
-	return certs, nil
+	return certs, raw, nil
 }
 
-func loadCertsFromPEMFile(certFile string) ([]*x509.Certificate, error) {
+func loadCertsFromPEMFile(certFile string) ([]*x509.Certificate, [][]byte, error) {
 	certData, err := os.ReadFile(certFile)
 	if err != nil {
-		return nil, ErrIOFailure
+		return nil, nil, ErrIOFailure
 	}
 	return loadCertsFromPEMData(certData)
 }
