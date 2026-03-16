@@ -3,6 +3,7 @@ package websvc
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"net"
 	"net/http"
@@ -48,11 +49,11 @@ func (s *Server) Listen() error {
 			MinVersion: tls.VersionTLS12,
 		}
 
-		cert, err := tls.LoadX509KeyPair(s.config.SSLCert, s.config.SSLKey)
+		cert, _, err := loadX509KeyPair(s.config.SSLCert, s.config.SSLKey)
 		if err != nil {
 			return ErrInvalidTlsKeyPair
 		}
-		s.tlsConfig.Certificates = []tls.Certificate{cert}
+		s.tlsConfig.Certificates = []tls.Certificate{*cert}
 
 		switch s.config.ClientAuthType {
 		case "none":
@@ -66,6 +67,17 @@ func (s *Server) Listen() error {
 		default:
 			s.tlsConfig.ClientAuth = tls.NoClientCert
 			logger.Warn("Invalid client_auth_type: %s, defaulting to 'none'", s.config.ClientAuthType)
+		}
+
+		if s.tlsConfig.ClientAuth != tls.NoClientCert {
+			s.tlsConfig.ClientCAs = x509.NewCertPool()
+			for _, ca := range s.config.CACerts {
+				cacert, err := loadData(ca)
+				if err != nil {
+					return fmt.Errorf("failed to load CA certificate: %w", err)
+				}
+				s.tlsConfig.ClientCAs.AppendCertsFromPEM(cacert)
+			}
 		}
 
 		listener, err := tls.Listen("tcp", fmt.Sprintf("%s:%d", s.config.Host, s.config.Port), s.tlsConfig)

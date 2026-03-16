@@ -107,13 +107,17 @@ func (sc *WebSocketConnection) Connect(ctx context.Context, url string, timeout 
 		if len(sc._cfg.TrustedCAs) > 0 {
 			certPool := x509.NewCertPool()
 			for _, ca := range sc._cfg.TrustedCAs {
-				certPool.AppendCertsFromPEM([]byte(ca))
+				cacert, err := loadData(ca)
+				if err != nil {
+					logger.Warn("websvc:ws:dial %s failed: %s", url, err.Error())
+				}
+				certPool.AppendCertsFromPEM(cacert)
 			}
 			dialer.TLSClientConfig.RootCAs = certPool
 		}
 		// If client certificate is specified, use it for TLS authentication
 		if sc._cfg.ClientCert != "" && sc._cfg.ClientKey != "" {
-			cert, err := tls.LoadX509KeyPair(sc._cfg.ClientCert, sc._cfg.ClientKey)
+			cert, _, err := loadX509KeyPair(sc._cfg.ClientCert, sc._cfg.ClientKey)
 			if err != nil {
 				logger.Error("websvc:ws:dial %s failed: %s", url, err.Error())
 				if sc._cfg.OnDisconnected != nil {
@@ -121,7 +125,7 @@ func (sc *WebSocketConnection) Connect(ctx context.Context, url string, timeout 
 				}
 				return sc._running
 			}
-			dialer.TLSClientConfig.Certificates = []tls.Certificate{cert}
+			dialer.TLSClientConfig.Certificates = []tls.Certificate{*cert}
 		}
 	}
 
