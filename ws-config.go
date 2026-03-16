@@ -53,13 +53,13 @@ type WebSocketConfig struct {
 	// Heartbeat will be triggered by the client side
 	BeatInterval int
 
-	// [Optional] The ping interval in seconds
+	// [Optional] The ping interval in milliseconds
 	// Should be greater than BeatInterval
 	// The actual ping interval will be set to multiple of BeatInterval
 	// If set to 0, will not send ping messages
 	PingInterval int
 
-	// [Optional] The heartbeat timeout in seconds
+	// [Optional] The heartbeat timeout in milliseconds
 	// If set to 0, will not check heartbeat timeout
 	BeatTimeout int
 

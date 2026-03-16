@@ -13,10 +13,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type ServerInitializer func(context.Context, *gin.Engine, *Server)
+
 type Server struct {
 	name        string
 	config      *Config
-	initializer func(context.Context, *gin.Engine)
+	initializer ServerInitializer
 	tlsConfig   *tls.Config
 	listener    net.Listener
 	router      http.Handler
@@ -25,13 +27,16 @@ type Server struct {
 	Host string // Actual listen host
 	Port int    // Actual listen port, may be different from config if config.Port is 0
 	TLS  bool   // Whether TLS is enabled
+
+	Attachment interface{}
 }
 
-func NewServer(name string, config *Config, initializer func(context.Context, *gin.Engine)) *Server {
+func NewServer(name string, config *Config, initializer ServerInitializer, attachment interface{}) *Server {
 	return &Server{
 		name:        name,
 		config:      config,
 		initializer: initializer,
+		Attachment:  attachment,
 	}
 }
 
@@ -95,7 +100,20 @@ func (s *Server) Start(ctx context.Context) error {
 			return err
 		}
 	}
-	s.server.Handler = NewHandler(ctx, s.initializer)
+
+	if logger.Level >= logger.DEBUG {
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
+	router := gin.New()
+	if logger.Level >= logger.DEBUG {
+		router.Use(gin.Logger())
+	}
+	s.initializer(ctx, router, s)
+
+	s.server.Handler = router
 	go s.server.Serve(s.listener)
 	return nil
 }
@@ -134,7 +152,7 @@ func (s *Server) Task(retryDuration time.Duration) service.ServiceTask {
 }
 
 // Create a new server task with the given configuration and initializer
-func NewServerTask(name string, config *Config, initializer func(context.Context, *gin.Engine), retryDuration time.Duration) service.ServiceTask {
-	server := NewServer(name, config, initializer)
+func NewServerTask(name string, config *Config, initializer ServerInitializer, retryDuration time.Duration, attachment interface{}) service.ServiceTask {
+	server := NewServer(name, config, initializer, attachment)
 	return server.Task(retryDuration)
 }
