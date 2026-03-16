@@ -80,6 +80,12 @@ func loadPrivateKeyFromPEM(fileOrData string) (interface{}, error) {
 }
 
 func loadPrivateKeyFromPEMData(keyData []byte) (interface{}, error) {
+	keyBlock, _ := pem.Decode(keyData)
+	if keyBlock == nil || (keyBlock.Type != "RSA PRIVATE KEY" && keyBlock.Type != "EC PRIVATE KEY" && keyBlock.Type != "PRIVATE KEY") {
+		return nil, ErrInvalidPrivateKey
+	}
+	keyData = keyBlock.Bytes
+
 	// RSA PKCS1 Private Key
 	if key, err := x509.ParsePKCS1PrivateKey(keyData); err == nil {
 		return key, nil
