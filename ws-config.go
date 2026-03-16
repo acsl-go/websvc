@@ -79,6 +79,19 @@ type WebSocketConfig struct {
 	// The default value is 10s, if set to 0, the default value will be used
 	ConnectTimeout int
 
+	// [Optional] Whether to skip TLS certificate verification, client side only
+	// If set to true, will skip TLS certificate verification, this is not recommended in production environment
+	SkipTLSVerify bool
+
+	// [Optional] The trusted CA certificates for TLS connections
+	// If specified, the certificates will be used to verify the remote TLS certificate, this is recommended in production environment
+	TrustedCAs []string
+
+	// [Optional] The client TLS certificate and key for TLS connections, client side only
+	// If specified, the certificate and key will be used to authenticate to the remote TLS server, this is recommended in production environment
+	ClientCert string
+	ClientKey  string
+
 	// User-defined attachment
 	// The attachment will be passed to all handle functions in this config
 	Attachment interface{}

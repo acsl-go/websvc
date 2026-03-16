@@ -2,8 +2,11 @@ package websvc
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -77,7 +80,7 @@ func (sc *WebSocketConnection) Connect(ctx context.Context, url string, timeout 
 		headers = sc._cfg.Headers(sc._cfg.Attachment)
 	}
 
-	dialer := websocket.DefaultDialer
+	dialer := &websocket.Dialer{}
 
 	if sc._cfg.Socks5Proxy != "" {
 
@@ -90,12 +93,36 @@ func (sc *WebSocketConnection) Connect(ctx context.Context, url string, timeout 
 			return sc._running
 		}
 
-		dialer = &websocket.Dialer{
-			NetDial: func(network, addr string) (net.Conn, error) {
-				return socks5Dialer.Dial(network, addr)
-			},
+		dialer.NetDial = func(network, addr string) (net.Conn, error) {
+			return socks5Dialer.Dial(network, addr)
 		}
+	}
 
+	if strings.HasPrefix(url, "wss://") {
+		dialer.TLSClientConfig = &tls.Config{
+			MinVersion:         tls.VersionTLS12,
+			InsecureSkipVerify: sc._cfg.SkipTLSVerify,
+		}
+		// If trusted CAs are specified, use them instead of the system default ones
+		if len(sc._cfg.TrustedCAs) > 0 {
+			certPool := x509.NewCertPool()
+			for _, ca := range sc._cfg.TrustedCAs {
+				certPool.AppendCertsFromPEM([]byte(ca))
+			}
+			dialer.TLSClientConfig.RootCAs = certPool
+		}
+		// If client certificate is specified, use it for TLS authentication
+		if sc._cfg.ClientCert != "" && sc._cfg.ClientKey != "" {
+			cert, err := tls.LoadX509KeyPair(sc._cfg.ClientCert, sc._cfg.ClientKey)
+			if err != nil {
+				logger.Error("websvc:ws:dial %s failed: %s", url, err.Error())
+				if sc._cfg.OnDisconnected != nil {
+					sc._cfg.OnDisconnected(sc, sc._cfg.Attachment)
+				}
+				return sc._running
+			}
+			dialer.TLSClientConfig.Certificates = []tls.Certificate{cert}
+		}
 	}
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
