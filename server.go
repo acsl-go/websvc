@@ -54,6 +54,20 @@ func (s *Server) Listen() error {
 		}
 		s.tlsConfig.Certificates = []tls.Certificate{cert}
 
+		switch s.config.ClientAuthType {
+		case "none":
+			s.tlsConfig.ClientAuth = tls.NoClientCert // No client certificate required
+		case "optional":
+			s.tlsConfig.ClientAuth = tls.RequestClientCert // Client certificate is requested but not required, will be verified if provided
+		case "required":
+			s.tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert // Client certificate is required but will not be verified automatically, verification should be done in the application code using the VerifyPeerCertificate callback to allow for custom verification logic (e.g. support for self-signed certificates)
+		case "must":
+			s.tlsConfig.ClientAuth = tls.RequireAnyClientCert // Client certificate is required and must be verified by the RootCAs pool, will be verified automatically by the TLS stack using the RootCAs field of the TLS config (which can be set to a custom CA pool if needed)
+		default:
+			s.tlsConfig.ClientAuth = tls.NoClientCert
+			logger.Warn("Invalid client_auth_type: %s, defaulting to 'none'", s.config.ClientAuthType)
+		}
+
 		listener, err := tls.Listen("tcp", fmt.Sprintf("%s:%d", s.config.Host, s.config.Port), s.tlsConfig)
 		if err != nil {
 			return ErrPortBindingFailed
