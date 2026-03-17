@@ -13,10 +13,10 @@ type TLSCertVerificationConfig struct {
 	// if specified, will be used to verify the remote TLS certificate, return nil if the certificate is valid, otherwise return an error
 	// The error message will be pass to the client with HTTP status code 403
 	// if not specified, the checker will only check if the certificate is signed by one of the trusted CAs, and has the correct key usage for client authentication
-	CertChecker func(*x509.Certificate) error
+	CertChecker func(*gin.Context, *x509.Certificate) error
 }
 
-func TLSCertVerifier(cfg *TLSCertVerificationConfig) gin.HandlerFunc {
+func NewTLSCertVerifier(cfg *TLSCertVerificationConfig) gin.HandlerFunc {
 	cas := x509.NewCertPool()
 	for _, ca := range cfg.TrustedCAs {
 		cas.AppendCertsFromPEM([]byte(ca))
@@ -29,7 +29,7 @@ func TLSCertVerifier(cfg *TLSCertVerificationConfig) gin.HandlerFunc {
 
 	certChecker := cfg.CertChecker
 	if certChecker == nil {
-		certChecker = func(cert *x509.Certificate) error {
+		certChecker = func(c *gin.Context, cert *x509.Certificate) error {
 			return nil
 		}
 	}
@@ -49,7 +49,7 @@ func TLSCertVerifier(cfg *TLSCertVerificationConfig) gin.HandlerFunc {
 			return
 		}
 
-		err = certChecker(clientCert)
+		err = certChecker(c, clientCert)
 		if err != nil {
 			c.String(403, err.Error())
 			c.Abort()
