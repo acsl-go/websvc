@@ -221,6 +221,24 @@ func (sc *WebSocketConnection) SendJson(data interface{}) {
 	sc.SendTextBuffer(buf)
 }
 
+func (sc *WebSocketConnection) IsConnected() bool {
+	return sc._conn != nil
+}
+
+func (sc *WebSocketConnection) GetLocalAddr() net.Addr {
+	if sc._conn != nil {
+		return sc._conn.LocalAddr()
+	}
+	return nil
+}
+
+func (sc *WebSocketConnection) GetRemoteAddr() net.Addr {
+	if sc._conn != nil {
+		return sc._conn.RemoteAddr()
+	}
+	return nil
+}
+
 func (sc *WebSocketConnection) run(ctx context.Context) {
 	// Check the connection object, upper layer may have closed the connection in the onConnected callback.
 	if sc._conn != nil {
