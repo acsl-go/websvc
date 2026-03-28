@@ -14,6 +14,12 @@ type WebSocketConfig struct {
 	// client side only
 	Headers func(attachment interface{}) http.Header
 
+	// [Optional] Used to do before connect operations, such as authentication
+	// client side only If the connection is allowed, return true, otherwise return false
+	// Application may adjust the connection parameters in the config, such as ReconnectInterval, before returning true
+	// If BeforeConnect returns false, the connection will not be established, and the client will try to reconnect after ReconnectInterval
+	BeforeConnect func(cfg *WebSocketConfig) bool
+
 	// [Optional] Used to do before upgrade operations, such as authentication
 	// If the upgrade is allowed, return 0, <attachment>, nil, the <attachment> will be set to the Attachment of the connection object
 	// If the upgrade is not allowed, the return data will be processed as response.

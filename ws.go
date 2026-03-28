@@ -33,8 +33,10 @@ func WebSocketTask(url string, cfg *WebSocketConfig) service.ServiceTask {
 		}
 		reconnectTicker := time.NewTicker(time.Duration(interval) * time.Second)
 		for {
-			if !cli.Connect(ctx, url, time.Duration(cfg.ConnectTimeout)*time.Second) {
-				return
+			if cfg.BeforeConnect == nil || cfg.BeforeConnect(cfg) {
+				if !cli.Connect(ctx, url, time.Duration(cfg.ConnectTimeout)*time.Second) {
+					return
+				}
 			}
 			select {
 			case <-reconnectTicker.C:
