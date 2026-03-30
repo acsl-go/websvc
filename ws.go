@@ -21,7 +21,7 @@ func NewConnectionPool() *sync.Pool {
 	}
 }
 
-func WebSocketTask(url string, cfg *WebSocketConfig) service.ServiceTask {
+func WebSocketTask(cfg *WebSocketConfig) service.ServiceTask {
 	return func(ctx context.Context) {
 		cli := NewWebSocketConnection(cfg)
 		interval := cfg.ReconnectInterval
@@ -34,7 +34,7 @@ func WebSocketTask(url string, cfg *WebSocketConfig) service.ServiceTask {
 		reconnectTicker := time.NewTicker(time.Duration(interval) * time.Second)
 		for {
 			if cfg.BeforeConnect == nil || cfg.BeforeConnect(cfg) {
-				if !cli.Connect(ctx, url, time.Duration(cfg.ConnectTimeout)*time.Second) {
+				if !cli.Connect(ctx, cfg.RemoteURL, time.Duration(cfg.ConnectTimeout)*time.Second) {
 					return
 				}
 			}

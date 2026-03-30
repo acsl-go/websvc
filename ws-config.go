@@ -10,6 +10,9 @@ import (
 
 type WebSocketConfig struct {
 
+	// [Client only] The remote URL for websocket connection, client side only
+	RemoteURL string
+
 	// [Optional] Used to get the headers for the websocket connection
 	// client side only
 	Headers func(attachment interface{}) http.Header

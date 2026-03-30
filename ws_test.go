@@ -28,7 +28,8 @@ func TestWSServer(t *testing.T) {
 }
 
 func TestWSClient(t *testing.T) {
-	service.Run(WebSocketTask("ws://localhost:11771/ws", &WebSocketConfig{
+	service.Run(WebSocketTask(&WebSocketConfig{
+		RemoteURL: "ws://localhost:11771/ws",
 		OnConnected: func(conn *WebSocketConnection, attachment interface{}) {
 			println("Connected")
 			buf := misc.NewBuffer(1024)
