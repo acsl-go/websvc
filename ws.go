@@ -21,8 +21,8 @@ func NewConnectionPool() *sync.Pool {
 	}
 }
 
-func WebSocketTask(cfg *WebSocketConfig) service.ServiceTask {
-	return func(ctx context.Context) {
+func WebSocketTask(cfg *WebSocketConfig) service.ITask {
+	return service.NewTask(func(ctx context.Context) {
 		cli := NewWebSocketConnection(cfg)
 		interval := cfg.ReconnectInterval
 		if interval == 0 {
@@ -46,7 +46,7 @@ func WebSocketTask(cfg *WebSocketConfig) service.ServiceTask {
 				return
 			}
 		}
-	}
+	})
 }
 
 func WebSocketHandler(ctx context.Context, cfg *WebSocketConfig) gin.HandlerFunc {

@@ -28,7 +28,7 @@ func NewHandler(ctx context.Context, initializer func(context.Context, *gin.Engi
 }
 
 // Deprecated: Use Server instead.
-func Task(name string, config *Config, initializer func(context.Context, *gin.Engine)) service.ServiceTask {
+func Task(name string, config *Config, initializer func(context.Context, *gin.Engine)) service.ITask {
 	if config.SSLCert != "" && config.SSLKey != "" {
 		if config.Port == 0 {
 			config.Port = 443
@@ -43,14 +43,14 @@ func Task(name string, config *Config, initializer func(context.Context, *gin.En
 }
 
 // Deprecated: Use Server instead.
-func HttpTask(name, addr string, initializer func(context.Context, *gin.Engine)) service.ServiceTask {
+func HttpTask(name, addr string, initializer func(context.Context, *gin.Engine)) service.ITask {
 	return service.HttpServer(name, addr, func(ctx context.Context) http.Handler {
 		return NewHandler(ctx, initializer)
 	})
 }
 
 // Deprecated: Use Server instead.
-func HttpsTask(name, addr, certFile, keyFile string, initializer func(context.Context, *gin.Engine)) service.ServiceTask {
+func HttpsTask(name, addr, certFile, keyFile string, initializer func(context.Context, *gin.Engine)) service.ITask {
 	return service.HttpsServer(name, addr, certFile, keyFile, func(ctx context.Context) http.Handler {
 		return NewHandler(ctx, initializer)
 	})

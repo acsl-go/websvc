@@ -146,8 +146,8 @@ func (s *Server) Start(ctx context.Context) error {
 
 // Run the server as a service task
 // The task will attempt to start the server, and if it fails (e.g. due to port binding issues), it will log a warning and retry until it succeeds or the context is canceled.
-func (s *Server) Task(retryDuration time.Duration) service.ServiceTask {
-	return func(ctx context.Context) {
+func (s *Server) Task(retryDuration time.Duration) service.ITask {
+	return service.NewTask(func(ctx context.Context) {
 		for {
 			err := s.Start(ctx)
 			if err == nil {
@@ -174,11 +174,11 @@ func (s *Server) Task(retryDuration time.Duration) service.ServiceTask {
 		} else {
 			logger.Info("Server %s on %s:%d stopped gracefully\n", s.name, s.Host, s.Port)
 		}
-	}
+	})
 }
 
 // Create a new server task with the given configuration and initializer
-func NewServerTask(name string, config *Config, initializer ServerInitializer, retryDuration time.Duration, attachment interface{}) service.ServiceTask {
+func NewServerTask(name string, config *Config, initializer ServerInitializer, retryDuration time.Duration, attachment interface{}) service.ITask {
 	server := NewServer(name, config, initializer, attachment)
 	return server.Task(retryDuration)
 }
