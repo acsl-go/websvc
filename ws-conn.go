@@ -117,7 +117,7 @@ func (sc *WebSocketConnection) Connect(ctx context.Context, url string, timeout 
 		}
 		// If client certificate is specified, use it for TLS authentication
 		if sc._cfg.ClientCert != "" && sc._cfg.ClientKey != "" {
-			cert, _, err := loadX509KeyPair(sc._cfg.ClientCert, sc._cfg.ClientKey)
+			cert, _, err := LoadX509KeyPair(sc._cfg.ClientCert, sc._cfg.ClientKey)
 			if err != nil {
 				logger.Error("websvc:ws:dial %s failed: %s", url, err.Error())
 				if sc._cfg.OnDisconnected != nil {

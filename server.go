@@ -49,7 +49,7 @@ func (s *Server) Listen() error {
 			MinVersion: tls.VersionTLS12,
 		}
 
-		cert, _, err := loadX509KeyPair(s.config.SSLCert, s.config.SSLKey)
+		cert, _, err := LoadX509KeyPair(s.config.SSLCert, s.config.SSLKey)
 		if err != nil {
 			return ErrInvalidTlsKeyPair
 		}

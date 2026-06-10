@@ -16,13 +16,13 @@ func loadData(fileOrData string) ([]byte, error) {
 	return []byte(fileOrData), nil
 }
 
-func loadX509KeyPair(certFile, keyFile string) (*tls.Certificate, []*x509.Certificate, error) {
-	certs, raw, err := loadCertsFromPEM(certFile)
+func LoadX509KeyPair(certFile, keyFile string) (*tls.Certificate, []*x509.Certificate, error) {
+	certs, raw, err := LoadCertsFromPEM(certFile)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	key, err := loadPrivateKeyFromPEM(keyFile)
+	key, err := LoadPrivateKeyFromPEM(keyFile)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -34,16 +34,16 @@ func loadX509KeyPair(certFile, keyFile string) (*tls.Certificate, []*x509.Certif
 	}, certs, nil
 }
 
-func loadCertsFromPEM(fileOrData string) ([]*x509.Certificate, [][]byte, error) {
+func LoadCertsFromPEM(fileOrData string) ([]*x509.Certificate, [][]byte, error) {
 	// Attempt to load from file first
 	if _, err := os.Stat(fileOrData); err == nil {
-		return loadCertsFromPEMFile(fileOrData)
+		return LoadCertsFromPEMFile(fileOrData)
 	}
 	// If file does not exist, treat it as PEM data
-	return loadCertsFromPEMData([]byte(fileOrData))
+	return LoadCertsFromPEMData([]byte(fileOrData))
 }
 
-func loadCertsFromPEMData(certData []byte) ([]*x509.Certificate, [][]byte, error) {
+func LoadCertsFromPEMData(certData []byte) ([]*x509.Certificate, [][]byte, error) {
 	certs := []*x509.Certificate{}
 	raw := [][]byte{}
 	for {
@@ -64,24 +64,24 @@ func loadCertsFromPEMData(certData []byte) ([]*x509.Certificate, [][]byte, error
 	return certs, raw, nil
 }
 
-func loadCertsFromPEMFile(certFile string) ([]*x509.Certificate, [][]byte, error) {
+func LoadCertsFromPEMFile(certFile string) ([]*x509.Certificate, [][]byte, error) {
 	certData, err := os.ReadFile(certFile)
 	if err != nil {
 		return nil, nil, ErrIOFailure
 	}
-	return loadCertsFromPEMData(certData)
+	return LoadCertsFromPEMData(certData)
 }
 
-func loadPrivateKeyFromPEM(fileOrData string) (interface{}, error) {
+func LoadPrivateKeyFromPEM(fileOrData string) (interface{}, error) {
 	// Attempt to load from file first
 	if _, err := os.Stat(fileOrData); err == nil {
-		return loadPrivateKeyFromPEMFile(fileOrData)
+		return LoadPrivateKeyFromPEMFile(fileOrData)
 	}
 	// If file does not exist, treat it as PEM data
-	return loadPrivateKeyFromPEMData([]byte(fileOrData))
+	return LoadPrivateKeyFromPEMData([]byte(fileOrData))
 }
 
-func loadPrivateKeyFromPEMData(keyData []byte) (interface{}, error) {
+func LoadPrivateKeyFromPEMData(keyData []byte) (interface{}, error) {
 	keyBlock, _ := pem.Decode(keyData)
 	if keyBlock == nil || (keyBlock.Type != "RSA PRIVATE KEY" && keyBlock.Type != "EC PRIVATE KEY" && keyBlock.Type != "PRIVATE KEY") {
 		return nil, ErrInvalidPrivateKey
@@ -103,10 +103,10 @@ func loadPrivateKeyFromPEMData(keyData []byte) (interface{}, error) {
 	return nil, ErrInvalidPrivateKey
 }
 
-func loadPrivateKeyFromPEMFile(keyFile string) (interface{}, error) {
+func LoadPrivateKeyFromPEMFile(keyFile string) (interface{}, error) {
 	keyData, err := os.ReadFile(keyFile)
 	if err != nil {
 		return nil, ErrIOFailure
 	}
-	return loadPrivateKeyFromPEMData(keyData)
+	return LoadPrivateKeyFromPEMData(keyData)
 }
